@@ -184,6 +184,46 @@
     padding: 4px;
   }
 
+  /* Range slider */
+  .field label .val {
+    float: right;
+    color: var(--gold);
+    font-family: 'Oswald', sans-serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(255,215,0,0.45);
+    border: 2px solid #0a0a14;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid #0a0a14;
+    box-shadow: 0 2px 8px rgba(255,215,0,0.45);
+  }
+
   /* Toggle switch */
   .toggle-field {
     display: flex;
@@ -460,6 +500,31 @@
       </div>
 
       <div class="field">
+        <label>Photo Fit Mode</label>
+        <select id="photoFit">
+          <option value="cover" selected>Cover — fill &amp; crop</option>
+          <option value="contain">Contain — fit entire image</option>
+          <option value="fill">Stretch — distort to fill</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Photo Zoom <span class="val" id="photoZoomVal">100%</span></label>
+        <input type="range" id="photoZoom" min="50" max="300" value="100" step="5">
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label>Horizontal <span class="val" id="photoXVal">50%</span></label>
+          <input type="range" id="photoX" min="0" max="100" value="50" step="1">
+        </div>
+        <div class="field">
+          <label>Vertical <span class="val" id="photoYVal">0%</span></label>
+          <input type="range" id="photoY" min="0" max="100" value="0" step="1">
+        </div>
+      </div>
+
+      <div class="field">
         <label>Name</label>
         <input type="text" id="subjectName" placeholder="Yeng Constantino">
       </div>
@@ -536,6 +601,10 @@
         <label>Total Yeng Credits</label>
         <input type="number" id="yengCredits" placeholder="500" min="0">
       </div>
+      <div class="field">
+        <label>Bonus Perk <span class="val" style="float:right;color:var(--text-dim);font-size:10px;">optional — shown on card</span></label>
+        <textarea id="bonusPerk" placeholder="e.g. Scan twice for free line cutting at meet &amp; greet"></textarea>
+      </div>
     </div>
 
   </aside>
@@ -586,6 +655,10 @@ const STAR_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
 // State
 const state = {
   photo: '',
+  photoFit: 'cover',     // cover | contain | fill
+  photoZoom: 100,        // 50-300 (percent)
+  photoX: 50,            // 0-100 (percent)
+  photoY: 0,             // 0-100 (percent)
   subjectName: 'Yeng Constantino',
   cardTitle: 'Live in Pasay',
   primaryColor: '#FFD700',
@@ -596,7 +669,8 @@ const state = {
   holographic: true,
   bio: 'A once-in-a-generation voice. This card captures a moment from one of the most iconic live performances of her career.',
   reward: 'Unlocks the digital card',
-  yengCredits: 500
+  yengCredits: 500,
+  bonusPerk: ''
 };
 
 let currentPreviewType = 'digital';
@@ -666,9 +740,70 @@ function frontCardCSS(data, opts) {
       border-radius: ${radius};
       overflow: hidden;
       background-color: #111;
-      background-image: ${data.photo ? `url('${data.photo}')` : 'linear-gradient(135deg, #1a1a2e, #16213e)'};
-      background-size: cover;
-      background-position: center top;
+      background-image: ${data.photo ? 'none' : 'linear-gradient(135deg, #1a1a2e, #16213e)'};
+    }
+    .card-photo {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: ${data.photoFit || 'cover'};
+      object-position: ${data.photoX}% ${data.photoY}%;
+      transform: scale(${(data.photoZoom || 100) / 100});
+      transform-origin: ${data.photoX}% ${data.photoY}%;
+      z-index: 0;
+      display: block;
+    }
+    .reward-strip {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      align-items: flex-start;
+    }
+    .credits-pill {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 6px;
+      background: linear-gradient(135deg, rgba(255,215,0,0.98), rgba(201,168,0,0.98));
+      color: #0a0a14;
+      padding: 5px 12px 5px 10px;
+      border-radius: 20px;
+      font-family: 'Oswald', sans-serif;
+      box-shadow: 0 2px 14px rgba(255,215,0,0.45), inset 0 1px 0 rgba(255,255,255,0.4);
+      border: 1px solid rgba(255,255,255,0.35);
+    }
+    .credits-pill .credits-coin {
+      font-size: 13px;
+      line-height: 1;
+    }
+    .credits-pill .credits-num {
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 0.3px;
+    }
+    .credits-pill .credits-label {
+      font-size: 9px;
+      letter-spacing: 1.4px;
+      font-weight: 600;
+      opacity: 0.85;
+      text-transform: uppercase;
+    }
+    .perk-line {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 11px;
+      line-height: 1.35;
+      color: rgba(255,255,255,0.9);
+      text-shadow: 0 2px 8px rgba(0,0,0,0.85);
+      font-weight: 500;
+      letter-spacing: 0.3px;
+      max-width: 100%;
+    }
+    .perk-line .star {
+      color: ${primary};
+      font-size: 12px;
+      margin-right: 4px;
+      filter: drop-shadow(0 0 6px ${primary}cc);
     }
     .holo {
       position: absolute; inset: 0;
@@ -785,6 +920,27 @@ function frontCardCSS(data, opts) {
   `;
 }
 
+/* ========== REWARD STRIP (shared for digital + physical) ========== */
+function rewardStripHTML(data) {
+  const credits = parseInt(data.yengCredits, 10) || 0;
+  const hasCredits = credits > 0;
+  const hasPerk = data.bonusPerk && String(data.bonusPerk).trim().length > 0;
+  if (!hasCredits && !hasPerk) return '';
+  const creditsPill = hasCredits
+    ? `<div class="credits-pill"><span class="credits-coin">⬤</span><span class="credits-num">${credits.toLocaleString()}</span><span class="credits-label">Yeng Credits</span></div>`
+    : '';
+  const perkLine = hasPerk
+    ? `<div class="perk-line"><span class="star">★</span>${escapeHtml(data.bonusPerk)}</div>`
+    : '';
+  return `<div class="reward-strip">${creditsPill}${perkLine}</div>`;
+}
+
+/* ========== PHOTO IMG (shared) ========== */
+function photoImgHTML(data) {
+  if (!data.photo) return '';
+  return `<img class="card-photo" src="${data.photo}" alt="">`;
+}
+
 /* ========== DIGITAL CARD ========== */
 function buildDigitalCard(data) {
   const css = frontCardCSS(data, { radius: '20px' });
@@ -796,12 +952,15 @@ function buildDigitalCard(data) {
 <title>${escapeHtml(data.subjectName)} — ${escapeHtml(data.cardTitle)} — Digital Card</title>
 <meta name="description" content="Yeng Cards digital collectible: ${escapeHtml(data.subjectName)} — ${escapeHtml(data.cardTitle)}">
 <meta name="yeng-holographic" content="${data.holographic ? 'true' : 'false'}">
+<meta name="yeng-credits" content="${escapeHtml(data.yengCredits)}">
+<meta name="yeng-bonus-perk" content="${escapeHtml(data.bonusPerk)}">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Rajdhani:wght@400;500;600&family=Playfair+Display:ital,wght@1,500;1,600&display=swap" rel="stylesheet">
 <style>${css}</style>
 </head>
 <body>
   <div class="card-outer">
     <div class="card">
+      ${photoImgHTML(data)}
       <div class="top-fade"></div>
       <div class="bottom-fade"></div>
       ${holoDiv}
@@ -814,6 +973,7 @@ function buildDigitalCard(data) {
         <h1 class="subject-name">${escapeHtml(data.subjectName)}</h1>
         <div class="title-ornament"></div>
         <div class="card-title-label">${escapeHtml(data.cardTitle)}</div>
+        ${rewardStripHTML(data)}
       </div>
     </div>
   </div>
@@ -834,27 +994,49 @@ function buildPhysicalCard(data) {
       html, body { background: #fff; }
       .card-outer { box-shadow: none !important; animation: none !important; }
     }
-    .footer { padding-bottom: 22px; }
+    .footer { padding-bottom: 20px; }
+    .name-row {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .name-row .subject-name {
+      margin: 0;
+      flex: 1;
+      min-width: 0;
+    }
+    .qr-wrap {
+      width: 56px;
+      height: 56px;
+      background: #fff;
+      padding: 3px;
+      border-radius: 4px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+      flex-shrink: 0;
+      z-index: 4;
+    }
+    .qr-wrap img { width: 100%; height: 100%; display: block; }
     .signature-area {
-      margin-top: 16px;
+      margin-top: 12px;
       background: rgba(255,255,255,0.94);
       border-radius: 4px;
-      padding: 14px 14px 8px;
-      height: 78px;
+      padding: 10px 12px 6px;
+      height: 58px;
       position: relative;
       box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08);
     }
     .signature-line {
       position: absolute;
-      left: 14px;
-      right: 14px;
-      bottom: 24px;
+      left: 12px;
+      right: 12px;
+      bottom: 18px;
       border-bottom: 1px solid rgba(0,0,0,0.4);
     }
     .signature-label {
       position: absolute;
-      bottom: 6px;
-      left: 14px;
+      bottom: 4px;
+      left: 12px;
       font-family: 'Oswald', sans-serif;
       font-size: 8px;
       letter-spacing: 1.5px;
@@ -862,19 +1044,7 @@ function buildPhysicalCard(data) {
       color: rgba(0,0,0,0.55);
       font-weight: 600;
     }
-    .qr-wrap {
-      position: absolute;
-      right: 20px;
-      bottom: 118px;
-      width: 58px;
-      height: 58px;
-      background: #fff;
-      padding: 3px;
-      border-radius: 4px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.5);
-      z-index: 4;
-    }
-    .qr-wrap img { width: 100%; height: 100%; display: block; }
+    .reward-strip { margin-top: 10px; }
   `;
 
   const meta = `
@@ -887,6 +1057,7 @@ function buildPhysicalCard(data) {
   holographic: ${data.holographic ? 'true' : 'false'}
   reward_description: ${escapeHtml(data.reward)}
   yeng_credits: ${escapeHtml(data.yengCredits)}
+  bonus_perk: ${escapeHtml(data.bonusPerk)}
   redeem_url: ${escapeHtml(redeemUrl)}
 -->`;
 
@@ -901,14 +1072,16 @@ function buildPhysicalCard(data) {
 <meta name="yeng-holographic" content="${data.holographic ? 'true' : 'false'}">
 <meta name="yeng-reward" content="${escapeHtml(data.reward)}">
 <meta name="yeng-credits" content="${escapeHtml(data.yengCredits)}">
+<meta name="yeng-bonus-perk" content="${escapeHtml(data.bonusPerk)}">
 <meta name="yeng-redeem-url" content="${escapeHtml(redeemUrl)}">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Rajdhani:wght@400;500;600&family=Playfair+Display:ital,wght@1,500;1,600&display=swap" rel="stylesheet">
 <style>${baseCss}${physicalExtraCss}</style>
 </head>
 ${meta}
-<body data-subject="${escapeHtml(data.subjectName)}" data-card-title="${escapeHtml(data.cardTitle)}" data-card-number="${escapeHtml(data.cardNumber)}" data-holographic="${data.holographic ? 'true' : 'false'}" data-reward="${escapeHtml(data.reward)}" data-yeng-credits="${escapeHtml(data.yengCredits)}">
+<body data-subject="${escapeHtml(data.subjectName)}" data-card-title="${escapeHtml(data.cardTitle)}" data-card-number="${escapeHtml(data.cardNumber)}" data-holographic="${data.holographic ? 'true' : 'false'}" data-reward="${escapeHtml(data.reward)}" data-yeng-credits="${escapeHtml(data.yengCredits)}" data-bonus-perk="${escapeHtml(data.bonusPerk)}">
   <div class="card-outer">
     <div class="card">
+      ${photoImgHTML(data)}
       <div class="top-fade"></div>
       <div class="bottom-fade"></div>
       ${holoDiv}
@@ -918,12 +1091,14 @@ ${meta}
         <div class="small">CARD №</div>
       </div>
 
-      <div class="qr-wrap"><img src="${qrDataUrl}" alt="Redeem QR"></div>
-
       <div class="footer">
-        <h1 class="subject-name">${escapeHtml(data.subjectName)}</h1>
+        <div class="name-row">
+          <h1 class="subject-name">${escapeHtml(data.subjectName)}</h1>
+          <div class="qr-wrap"><img src="${qrDataUrl}" alt="Redeem QR"></div>
+        </div>
         <div class="title-ornament"></div>
         <div class="card-title-label">${escapeHtml(data.cardTitle)}</div>
+        ${rewardStripHTML(data)}
         <div class="signature-area">
           <div class="signature-line"></div>
           <div class="signature-label">Autograph</div>
@@ -1095,6 +1270,60 @@ function buildBackCard(data) {
     .card-num-back .total { color: rgba(255,255,255,0.5); font-size: 14px; }
     .watermark { opacity: 0.25; }
     .watermark img { width: 32px; height: 32px; }
+    .rewards-panel {
+      background: rgba(255,215,0,0.04);
+      border: 1px solid rgba(255,215,0,0.18);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 2;
+    }
+    .rewards-panel .rewards-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: ${primary};
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .rewards-panel .credits-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .rewards-panel .credits-num-back {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: ${primary};
+      line-height: 1;
+    }
+    .rewards-panel .credits-suffix {
+      font-family: 'Barlow', sans-serif;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: rgba(255,255,255,0.55);
+      font-weight: 500;
+    }
+    .rewards-panel .perk-back {
+      font-family: 'Barlow', sans-serif;
+      font-size: 11.5px;
+      line-height: 1.4;
+      color: rgba(255,255,255,0.82);
+      padding-left: 14px;
+      position: relative;
+    }
+    .rewards-panel .perk-back::before {
+      content: '★';
+      position: absolute;
+      left: 0;
+      color: ${primary};
+      font-size: 10px;
+    }
     @media print {
       @page { size: 2.5in 3.5in; margin: 0; }
       html, body { background: #fff; }
@@ -1129,6 +1358,14 @@ function buildBackCard(data) {
         <div class="bio-label">About This Card</div>
         <div class="bio-text">${escapeHtml(data.bio)}</div>
       </div>
+
+      ${((parseInt(data.yengCredits,10)||0) > 0 || (data.bonusPerk && String(data.bonusPerk).trim())) ? `
+      <div class="rewards-panel">
+        <div class="rewards-label">Card Rewards</div>
+        ${(parseInt(data.yengCredits,10)||0) > 0 ? `<div class="credits-row"><div class="credits-num-back">${(parseInt(data.yengCredits,10)||0).toLocaleString()}</div><div class="credits-suffix">Yeng Credits</div></div>` : ''}
+        ${data.bonusPerk && String(data.bonusPerk).trim() ? `<div class="perk-back">${escapeHtml(data.bonusPerk)}</div>` : ''}
+      </div>
+      ` : ''}
 
       <div class="bottom-row">
         <div class="rarity-block">
@@ -1167,9 +1404,18 @@ function readForm() {
   state.cardNumber     = document.getElementById('cardNumber').value || state.cardNumber;
   state.cardTotal      = document.getElementById('cardTotal').value || state.cardTotal;
   state.holographic    = document.getElementById('holographic').checked;
+  state.photoFit       = document.getElementById('photoFit').value;
+  state.photoZoom      = +document.getElementById('photoZoom').value;
+  state.photoX         = +document.getElementById('photoX').value;
+  state.photoY         = +document.getElementById('photoY').value;
   state.bio            = document.getElementById('bio').value || state.bio;
   state.reward         = document.getElementById('reward').value || state.reward;
   state.yengCredits    = document.getElementById('yengCredits').value || state.yengCredits;
+  state.bonusPerk      = document.getElementById('bonusPerk').value;
+  // live-update slider value labels
+  document.getElementById('photoZoomVal').textContent = state.photoZoom + '%';
+  document.getElementById('photoXVal').textContent    = state.photoX + '%';
+  document.getElementById('photoYVal').textContent    = state.photoY + '%';
 }
 
 function writeFormFromState() {
@@ -1181,9 +1427,17 @@ function writeFormFromState() {
   document.getElementById('cardNumber').value     = state.cardNumber;
   document.getElementById('cardTotal').value      = state.cardTotal;
   document.getElementById('holographic').checked  = state.holographic;
+  document.getElementById('photoFit').value       = state.photoFit;
+  document.getElementById('photoZoom').value      = state.photoZoom;
+  document.getElementById('photoX').value         = state.photoX;
+  document.getElementById('photoY').value         = state.photoY;
+  document.getElementById('photoZoomVal').textContent = state.photoZoom + '%';
+  document.getElementById('photoXVal').textContent    = state.photoX + '%';
+  document.getElementById('photoYVal').textContent    = state.photoY + '%';
   document.getElementById('bio').value            = state.bio;
   document.getElementById('reward').value         = state.reward;
   document.getElementById('yengCredits').value    = state.yengCredits;
+  document.getElementById('bonusPerk').value      = state.bonusPerk;
 }
 
 function onFormChange() {
@@ -1251,9 +1505,14 @@ async function downloadAllZip() {
     holographic: state.holographic,
     primary_color: state.primaryColor,
     secondary_color: state.secondaryColor,
+    photo_fit: state.photoFit,
+    photo_zoom: state.photoZoom,
+    photo_x: state.photoX,
+    photo_y: state.photoY,
     bio: state.bio,
     reward_description: state.reward,
     yeng_credits: state.yengCredits,
+    bonus_perk: state.bonusPerk,
     redeem_url: buildRedeemURL(state)
   };
   zip.file(base + '_metadata.json', JSON.stringify(meta, null, 2));
@@ -1288,7 +1547,9 @@ function init() {
   writeFormFromState();
 
   const ids = ['subjectName','cardTitle','primaryColor','secondaryColor',
-               'rarity','cardNumber','cardTotal','holographic','bio','reward','yengCredits'];
+               'rarity','cardNumber','cardTotal','holographic',
+               'photoFit','photoZoom','photoX','photoY',
+               'bio','reward','yengCredits','bonusPerk'];
   ids.forEach(id => {
     const el = document.getElementById(id);
     el.addEventListener('input', onFormChange);
