@@ -184,6 +184,78 @@
     padding: 4px;
   }
 
+  /* Toggle switch */
+  .toggle-field {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 14px;
+    background: rgba(0,0,0,0.35);
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+  }
+  .toggle-field .toggle-label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .toggle-field .toggle-label .title {
+    font-family: 'Oswald', sans-serif;
+    font-size: 12px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--text);
+    font-weight: 600;
+  }
+  .toggle-field .toggle-label .desc {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.3px;
+  }
+  .switch {
+    position: relative;
+    width: 46px;
+    height: 26px;
+    flex-shrink: 0;
+  }
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  .switch .slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid var(--border-strong);
+    border-radius: 26px;
+    transition: 0.2s;
+  }
+  .switch .slider::before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #fff;
+    border-radius: 50%;
+    transition: 0.2s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+  }
+  .switch input:checked + .slider {
+    background: linear-gradient(135deg, var(--gold), var(--gold-dim));
+    border-color: var(--gold);
+    box-shadow: 0 0 14px rgba(255,215,0,0.45);
+  }
+  .switch input:checked + .slider::before {
+    transform: translate(20px, -50%);
+    background: #0a0a14;
+  }
+
   .file-upload {
     position: relative;
     border: 2px dashed var(--border-strong);
@@ -432,6 +504,18 @@
           </div>
         </div>
       </div>
+      <div class="field">
+        <div class="toggle-field">
+          <div class="toggle-label">
+            <span class="title">Holographic</span>
+            <span class="desc">Adds the animated shimmer overlay</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="holographic" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
     </div>
 
     <div class="form-section">
@@ -509,6 +593,7 @@ const state = {
   rarity: 'Epic',
   cardNumber: '1',
   cardTotal: '100',
+  holographic: true,
   bio: 'A once-in-a-generation voice. This card captures a moment from one of the most iconic live performances of her career.',
   reward: 'Unlocks the digital card',
   yengCredits: 500
@@ -703,12 +788,14 @@ function frontCardCSS(data, opts) {
 /* ========== DIGITAL CARD ========== */
 function buildDigitalCard(data) {
   const css = frontCardCSS(data, { radius: '20px' });
+  const holoDiv = data.holographic ? '<div class="holo"></div>' : '';
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <title>${escapeHtml(data.subjectName)} — ${escapeHtml(data.cardTitle)} — Digital Card</title>
 <meta name="description" content="Yeng Cards digital collectible: ${escapeHtml(data.subjectName)} — ${escapeHtml(data.cardTitle)}">
+<meta name="yeng-holographic" content="${data.holographic ? 'true' : 'false'}">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Rajdhani:wght@400;500;600&family=Playfair+Display:ital,wght@1,500;1,600&display=swap" rel="stylesheet">
 <style>${css}</style>
 </head>
@@ -717,7 +804,7 @@ function buildDigitalCard(data) {
     <div class="card">
       <div class="top-fade"></div>
       <div class="bottom-fade"></div>
-      <div class="holo"></div>
+      ${holoDiv}
       <div class="rarity-badge">${escapeHtml(data.rarity)}</div>
       <div class="card-num-top">
         <div class="big">${escapeHtml(data.cardNumber)}<span style="font-size:16px;opacity:0.65;">/${escapeHtml(data.cardTotal)}</span></div>
@@ -739,6 +826,7 @@ function buildPhysicalCard(data) {
   const baseCss = frontCardCSS(data, { radius: '0px' });
   const redeemUrl = buildRedeemURL(data);
   const qrDataUrl = generateQRDataURL(redeemUrl);
+  const holoDiv = data.holographic ? '<div class="holo"></div>' : '';
 
   const physicalExtraCss = `
     @media print {
@@ -796,6 +884,7 @@ function buildPhysicalCard(data) {
   card_title: ${escapeHtml(data.cardTitle)}
   card_number: ${escapeHtml(data.cardNumber)}/${escapeHtml(data.cardTotal)}
   rarity: ${escapeHtml(data.rarity)}
+  holographic: ${data.holographic ? 'true' : 'false'}
   reward_description: ${escapeHtml(data.reward)}
   yeng_credits: ${escapeHtml(data.yengCredits)}
   redeem_url: ${escapeHtml(redeemUrl)}
@@ -809,6 +898,7 @@ function buildPhysicalCard(data) {
 <meta name="yeng-card-type" content="physical">
 <meta name="yeng-subject" content="${escapeHtml(data.subjectName)}">
 <meta name="yeng-card-title" content="${escapeHtml(data.cardTitle)}">
+<meta name="yeng-holographic" content="${data.holographic ? 'true' : 'false'}">
 <meta name="yeng-reward" content="${escapeHtml(data.reward)}">
 <meta name="yeng-credits" content="${escapeHtml(data.yengCredits)}">
 <meta name="yeng-redeem-url" content="${escapeHtml(redeemUrl)}">
@@ -816,12 +906,12 @@ function buildPhysicalCard(data) {
 <style>${baseCss}${physicalExtraCss}</style>
 </head>
 ${meta}
-<body data-subject="${escapeHtml(data.subjectName)}" data-card-title="${escapeHtml(data.cardTitle)}" data-card-number="${escapeHtml(data.cardNumber)}" data-reward="${escapeHtml(data.reward)}" data-yeng-credits="${escapeHtml(data.yengCredits)}">
+<body data-subject="${escapeHtml(data.subjectName)}" data-card-title="${escapeHtml(data.cardTitle)}" data-card-number="${escapeHtml(data.cardNumber)}" data-holographic="${data.holographic ? 'true' : 'false'}" data-reward="${escapeHtml(data.reward)}" data-yeng-credits="${escapeHtml(data.yengCredits)}">
   <div class="card-outer">
     <div class="card">
       <div class="top-fade"></div>
       <div class="bottom-fade"></div>
-      <div class="holo"></div>
+      ${holoDiv}
       <div class="rarity-badge">${escapeHtml(data.rarity)}</div>
       <div class="card-num-top">
         <div class="big">${escapeHtml(data.cardNumber)}<span style="font-size:16px;opacity:0.65;">/${escapeHtml(data.cardTotal)}</span></div>
@@ -1076,6 +1166,7 @@ function readForm() {
   state.rarity         = document.getElementById('rarity').value;
   state.cardNumber     = document.getElementById('cardNumber').value || state.cardNumber;
   state.cardTotal      = document.getElementById('cardTotal').value || state.cardTotal;
+  state.holographic    = document.getElementById('holographic').checked;
   state.bio            = document.getElementById('bio').value || state.bio;
   state.reward         = document.getElementById('reward').value || state.reward;
   state.yengCredits    = document.getElementById('yengCredits').value || state.yengCredits;
@@ -1089,6 +1180,7 @@ function writeFormFromState() {
   document.getElementById('rarity').value         = state.rarity;
   document.getElementById('cardNumber').value     = state.cardNumber;
   document.getElementById('cardTotal').value      = state.cardTotal;
+  document.getElementById('holographic').checked  = state.holographic;
   document.getElementById('bio').value            = state.bio;
   document.getElementById('reward').value         = state.reward;
   document.getElementById('yengCredits').value    = state.yengCredits;
@@ -1156,6 +1248,7 @@ async function downloadAllZip() {
     rarity: state.rarity,
     card_number: state.cardNumber,
     card_total: state.cardTotal,
+    holographic: state.holographic,
     primary_color: state.primaryColor,
     secondary_color: state.secondaryColor,
     bio: state.bio,
@@ -1195,7 +1288,7 @@ function init() {
   writeFormFromState();
 
   const ids = ['subjectName','cardTitle','primaryColor','secondaryColor',
-               'rarity','cardNumber','cardTotal','bio','reward','yengCredits'];
+               'rarity','cardNumber','cardTotal','holographic','bio','reward','yengCredits'];
   ids.forEach(id => {
     const el = document.getElementById(id);
     el.addEventListener('input', onFormChange);
